@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart Cart</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background: #eef2f7;
+  margin: 0;
+}
+
+.header {
+  background: #232f3e;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 22px;
+}
+
+.container {
+  width: 90%;
+  margin: auto;
+}
+
+.camera-box {
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #4CAF50;
+  color: white;
+  padding: 10px;
+}
+
+td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete { background: red; color: white; }
+.clear { background: orange; color: white; margin-top:10px;}
+.pay { background: green; color: white; margin-top:10px;}
+
+.total {
+  text-align: right;
+  font-size: 20px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.empty {
+  text-align: center;
+  color: gray;
+  margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">🛒 Smart Cart</div>
+
+<div class="container">
+
+  <!-- CAMERA -->
+  <div class="camera-box">
+    <img src="http://10.217.151.55/stream" width="100%">
+  </div>
+
+  <!-- CART TABLE -->
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Total</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="cart"></tbody>
+  </table>
+
+  <div id="emptyMsg" class="empty">No items in cart 🛍️</div>
+
+  <div id="total" class="total"></div>
+
+  <button class="clear" onclick="clearCart()">Clear Cart</button>
+  <button class="pay" onclick="downloadBill()">Download Bill</button>
+
+</div>
+
+<script>
+const API = " http://10.217.151.55:5000";
+
+async function loadCart() {
+  let res = await fetch(API + "/cart");
+  let data = await res.json();
+
+  let html = "";
+  let total = 0;
+  let isEmpty = true;
+
+  for (let key in data) {
+    isEmpty = false;
+
+    let item = data[key];
+    let t = item.price * item.qty;
+    total += t;
+
+    html += `
+      <tr>
+        <td>${item.name}</td>
+        <td>₹${item.price}</td>
+        <td>${item.qty}</td>
+        <td>₹${t}</td>
+        <td><button class="delete" onclick="removeItem('${key}')">Delete</button></td>
+      </tr>
+    `;
+  }
+
+  document.getElementById("cart").innerHTML = html;
+
+  if (isEmpty) {
+    document.getElementById("emptyMsg").style.display = "block";
+    document.getElementById("table").style.display = "none";
+    document.getElementById("total").innerText = "";
+  } else {
+    document.getElementById("emptyMsg").style.display = "none";
+    document.getElementById("table").style.display = "table";
+    document.getElementById("total").innerText = "Total: ₹" + total;
+  }
+}
+
+async function removeItem(code) {
+  await fetch(API + "/remove", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({code})
+  });
+}
+
+async function clearCart() {
+  await fetch(API + "/clear", { method: "POST" });
+}
+
+function downloadBill() {
+  window.open(" http://10.217.151.55:5000/bill");
+}
+setInterval(loadCart, 2000);
+</script>
+
+</body>
+</html>
